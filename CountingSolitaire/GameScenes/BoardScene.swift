@@ -66,11 +66,40 @@ class BoardScene: SKScene {
     
     override func update(currentTime: CFTimeInterval) {
         /* Called before each frame is rendered */
+        
         for(_, card) in myDeck.Cards.enumerate(){
             if(card.position != myDeck.position && !card.Dragging){
                 calculatePileRects(card)
             }
         }
+        
+        for(_, card) in Tableau1.Cards.enumerate(){
+            if(card.position != Tableau1.position && !card.Dragging){
+                calculatePileRects(card)
+            }
+        }
+
+        
+        for(_, card) in Tableau2.Cards.enumerate(){
+            if(card.position != Tableau2.position && !card.Dragging){
+                calculatePileRects(card)
+            }
+        }
+
+        
+        for(_, card) in Tableau3.Cards.enumerate(){
+            if(card.position != Tableau3.position && !card.Dragging){
+                calculatePileRects(card)
+            }
+        }
+
+        
+        for(_, card) in Tableau4.Cards.enumerate(){
+            if(card.position != Tableau4.position && !card.Dragging){
+                calculatePileRects(card)
+            }
+        }
+
     }
     
     func calculatePileRects(card: Card) {
@@ -153,46 +182,59 @@ class BoardScene: SKScene {
         
         let returnPile : Pile = returnPileByIndex(returnPosition);
         
+        if(movePosition == returnPosition){
+            card.position = card.CardPos;
+            return
+        }
+        
         switch movePosition {
 //        case 0: // Deck
 //            card.position = myDeck.position
 //            break;
         case 1: // F1
-            if(card.Value % Foundation1.Multiplier == 0){
+            if(card.Value == (Foundation1.Cards.last?.Value)! + Foundation1.Multiplier){
                 Foundation1.AddCard(returnPile.GetCard(card))
                 return
             }
         case 2: // F2
-            if(card.Value % Foundation2.Multiplier == 0){
-                Foundation1.AddCard(returnPile.GetCard(card))
+            if(card.Value == (Foundation2.Cards.last?.Value)! + Foundation2.Multiplier){
+                Foundation2.AddCard(returnPile.GetCard(card))
                 return
             }
         case 3: // F3
-            if(card.Value % Foundation3.Multiplier == 0){
-                Foundation1.AddCard(returnPile.GetCard(card))
+            if(card.Value == (Foundation3.Cards.last?.Value)! + Foundation3.Multiplier){
+                Foundation3.AddCard(returnPile.GetCard(card))
                 return
             }
         case 4: // F4
-            if(card.Value % Foundation4.Multiplier == 0){
-                Foundation1.AddCard(returnPile.GetCard(card))
+            if(card.Value == (Foundation4.Cards.last?.Value)! + Foundation4.Multiplier){
+                Foundation4.AddCard(returnPile.GetCard(card))
                 return
             }
         case 5: // T1
-            Tableau1.AddCard(returnPile.GetCard(card))
-            return
+            if(!Tableau1.HasCard(card)){
+                Tableau1.AddCard(returnPile.GetCard(card))
+                return
+            }
         case 6: // T2
-            Tableau2.AddCard(returnPile.GetCard(card))
-            return
+            if(!Tableau2.HasCard(card)){
+                Tableau2.AddCard(returnPile.GetCard(card))
+                return
+            }
         case 7: // T3
-            Tableau3.AddCard(returnPile.GetCard(card))
-            return
+            if(!Tableau3.HasCard(card)){
+                Tableau3.AddCard(returnPile.GetCard(card))
+                return
+            }
         case 8: // T4
-            Tableau4.AddCard(returnPile.GetCard(card))
-            return
+            if(!Tableau4.HasCard(card)){
+                Tableau4.AddCard(returnPile.GetCard(card))
+                return
+            }
         default:
-            break;
+            card.position = card.CardPos
         }
-
+        card.position = card.CardPos
     }
     
     func returnPileByIndex(index : Int) -> Pile {

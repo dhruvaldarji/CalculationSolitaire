@@ -40,27 +40,30 @@ class Pile : SKSpriteNode {
     
     func GetTop() -> Card {
         let card = self.Cards.removeLast()
-        Cards.first?.userInteractionEnabled = true
+        Cards.last?.userInteractionEnabled = true
         return card
+    }
+    
+    func HasCard(card: Card) -> Bool {
+        return Cards.contains(card);
     }
     
     func GetCard(card: Card) -> Card {
         let index = self.Cards.indexOf(card)
         let card = self.Cards.removeAtIndex(index!)
-        Cards.first?.userInteractionEnabled = true
+        Cards.last?.userInteractionEnabled = true
         return card
     }
-
     
     func GetAtIndex(index : Int) -> Card {
         let card = self.Cards.removeAtIndex(index)
-        Cards.first?.userInteractionEnabled = true
+        Cards.last?.userInteractionEnabled = true
         return card
     }
     
     func AddCard(card: Card) {
         // Set current head drag to false.
-        Cards.first?.userInteractionEnabled = false
+        Cards.last?.userInteractionEnabled = false
 
         // Move card to position
         card.position = self.position
@@ -73,7 +76,7 @@ class Pile : SKSpriteNode {
         Cards.append(card)
         
         // Set new head's drag to true;
-        Cards.first?.userInteractionEnabled = true
+        Cards.last?.userInteractionEnabled = true
     }
 
     
