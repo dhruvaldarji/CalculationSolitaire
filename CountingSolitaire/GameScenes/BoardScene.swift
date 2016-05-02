@@ -16,22 +16,38 @@ class BoardScene: SKScene {
     let Foundation2 = Foundation(mult: 2)
     let Foundation3 = Foundation(mult: 3)
     let Foundation4 = Foundation(mult: 4)
+    
+    var F1Label = SKLabelNode(fontNamed:"System")
+    var F2Label = SKLabelNode(fontNamed:"System")
+    var F3Label = SKLabelNode(fontNamed:"System")
+    var F4Label = SKLabelNode(fontNamed:"System")
+
 
     let Tableau1 = Tableau()
     let Tableau2 = Tableau()
     let Tableau3 = Tableau()
     let Tableau4 = Tableau()
     
+    
+    let Timer = SKLabelNode(fontNamed:"System")
+    
+    var startTime = NSTimeInterval()
+    var gameTimer = NSTimer()
+    
+    var win = false;
+    
     override func didMoveToView(view: SKView) {
         /* Setup your scene here */
 
         DrawPiles(view)
 
-        DrawScore(view)
-
+//        DrawScore(view)
+//
         DrawTimer(view)
         
         DrawQuit(view)
+        
+        DrawPileCounts(view)
         
         DrawCards(view)
         
@@ -39,6 +55,10 @@ class BoardScene: SKScene {
         fixDeckZIndex()
         
         SetFoundationCards()
+        
+        let aSelector : Selector = #selector(BoardScene.updateTime)
+        gameTimer = NSTimer.scheduledTimerWithTimeInterval(0.01, target: self, selector: aSelector, userInfo: nil, repeats: true)
+        startTime = NSDate.timeIntervalSinceReferenceDate()
         
     }
     
@@ -62,7 +82,49 @@ class BoardScene: SKScene {
     override func touchesEnded(touches: Set<UITouch>, withEvent event: UIEvent?) {
         /* Called when a touch ends */
     }
-
+    
+    func updateTime() {
+        
+        let currentTime = NSDate.timeIntervalSinceReferenceDate()
+        
+        //Find the difference between current time and start time.
+        
+        var elapsedTime: NSTimeInterval = currentTime - startTime
+        
+        //calculate the minutes in elapsed time.
+        
+        let hours = UInt8(elapsedTime / 3600.0)
+        
+        elapsedTime -= (NSTimeInterval(hours) * 3600.0)
+        
+        //calculate the minutes in elapsed time.
+        
+        let minutes = UInt8(elapsedTime / 60.0)
+        
+        elapsedTime -= (NSTimeInterval(minutes) * 60)
+        
+        //calculate the seconds in elapsed time.
+        
+        let seconds = UInt8(elapsedTime)
+        
+        elapsedTime -= NSTimeInterval(seconds)
+        
+        //find out the fraction of milliseconds to be displayed.
+        
+//        let fraction = UInt8(elapsedTime * 100)
+        
+        //add the leading zero for minutes, seconds and millseconds and store them as string constants
+        
+        let strHours = String(format: "%02d", hours)
+        let strMinutes = String(format: "%02d", minutes)
+        let strSeconds = String(format: "%02d", seconds)
+//        let strFraction = String(format: "%02d", fraction)
+        
+        //concatenate minuets, seconds and milliseconds as assign it to the UILabel
+        
+        Timer.text = "\(strHours):\(strMinutes):\(strSeconds)"
+        
+    }
     
     override func update(currentTime: CFTimeInterval) {
         /* Called before each frame is rendered */
@@ -99,6 +161,10 @@ class BoardScene: SKScene {
                 calculatePileRects(card)
             }
         }
+        
+        UpdatePileCounts()
+        
+        CheckForWin()
 
     }
     
@@ -148,7 +214,7 @@ class BoardScene: SKScene {
             movePosition = 4
         }
         
-        pileRect = CGRect(origin: Tableau1.position, size: Tableau1.size)
+        pileRect = getRect(Tableau1)
         if(Tableau1.Cards.contains(card)){
             returnPosition = 5
         }
@@ -181,60 +247,67 @@ class BoardScene: SKScene {
         }
         
         let returnPile : Pile = returnPileByIndex(returnPosition);
+        let movePile : Pile = returnPileByIndex(movePosition);
         
+        // If moving to origin, ignore and return.
         if(movePosition == returnPosition){
             card.position = card.CardPos;
             return
         }
         
-        switch movePosition {
-//        case 0: // Deck
-//            card.position = myDeck.position
-//            break;
-        case 1: // F1
-            if(card.Value == (Foundation1.Cards.last?.Value)! + Foundation1.Multiplier){
-                Foundation1.AddCard(returnPile.GetCard(card))
-                return
-            }
-        case 2: // F2
-            if(card.Value == (Foundation2.Cards.last?.Value)! + Foundation2.Multiplier){
-                Foundation2.AddCard(returnPile.GetCard(card))
-                return
-            }
-        case 3: // F3
-            if(card.Value == (Foundation3.Cards.last?.Value)! + Foundation3.Multiplier){
-                Foundation3.AddCard(returnPile.GetCard(card))
-                return
-            }
-        case 4: // F4
-            if(card.Value == (Foundation4.Cards.last?.Value)! + Foundation4.Multiplier){
-                Foundation4.AddCard(returnPile.GetCard(card))
-                return
-            }
-        case 5: // T1
-            if(!Tableau1.HasCard(card)){
-                Tableau1.AddCard(returnPile.GetCard(card))
-                return
-            }
-        case 6: // T2
-            if(!Tableau2.HasCard(card)){
-                Tableau2.AddCard(returnPile.GetCard(card))
-                return
-            }
-        case 7: // T3
-            if(!Tableau3.HasCard(card)){
-                Tableau3.AddCard(returnPile.GetCard(card))
-                return
-            }
-        case 8: // T4
-            if(!Tableau4.HasCard(card)){
-                Tableau4.AddCard(returnPile.GetCard(card))
-                return
-            }
-        default:
-            card.position = card.CardPos
+        // If on a tableau and attempting to move to another tableau, ignore and return.
+        else if(returnPosition >= 5 && movePosition >= 5 && movePile.Cards.count > 0){
+            card.position = card.CardPos;
+            return
         }
+        
+        if let pile = movePile as? Foundation {
+            // pile is a Foundation. Do something with pile
+            if(pile.Cards.count < 13){
+                if(card.Value == pile.NextValue){
+                    pile.AddCard(returnPile.GetCard(card))
+                    return
+                }
+            }
+            else {
+                card.position = card.CardPos
+                return
+            }
+            
+        }
+        else if let pile = movePile as? Tableau {
+            // pile is a Tableau. Do something with pile
+            // Don't let the player add more than 10 cards to a pile. (So it doesn't go off the screen.)
+            if(pile.Cards.count < 10){
+                if(!pile.HasCard(card)){
+                    pile.AddCard(returnPile.GetCard(card))
+                    return
+                }
+            }
+            else {
+                card.position = card.CardPos
+                return
+            }
+
+        }
+        else {
+            card.position = card.CardPos
+            return
+        }
+        
+        // If we get this far, something weird happened. Return to origin.
         card.position = card.CardPos
+    }
+    
+    func getRect(pile : Pile) -> CGRect {
+        var rect = CGRect(origin: Tableau1.position, size: Tableau1.size)
+        let origin = rect.origin
+        let size = rect.size
+        
+        rect.origin.y = origin.y - CGFloat(pile.Cards.count * 15)
+        rect.size.height = size.height + CGFloat(pile.Cards.count * 30)
+        
+        return rect
     }
     
     func returnPileByIndex(index : Int) -> Pile {
@@ -280,44 +353,44 @@ class BoardScene: SKScene {
         
         // Foundations
         
-        Foundation1.position = CGPointMake(300, 575)
+        Foundation1.position = CGPointMake(300, 525)
         Foundation1.name = "F1"
         addChild(Foundation1)
         
-        Foundation2.position = CGPointMake(450, 575)
+        Foundation2.position = CGPointMake(450, 525)
         Foundation2.name = "F2"
         addChild(Foundation2)
         
-        Foundation3.position = CGPointMake(600, 575)
+        Foundation3.position = CGPointMake(600, 525)
         Foundation3.name = "F3"
         addChild(Foundation3)
         
-        Foundation4.position = CGPointMake(750, 575)
+        Foundation4.position = CGPointMake(750, 525)
         Foundation4.name = "F4"
         addChild(Foundation4)
         
         
         // Tableaus
         
-        Tableau1.position = CGPointMake(300, 400)
+        Tableau1.position = CGPointMake(300, 350)
         Tableau1.name = "T1"
         addChild(Tableau1)
         
-        Tableau2.position = CGPointMake(450, 400)
+        Tableau2.position = CGPointMake(450, 350)
         Tableau2.name = "T2"
         addChild(Tableau2)
         
-        Tableau3.position = CGPointMake(600, 400)
+        Tableau3.position = CGPointMake(600, 350)
         Tableau3.name = "T3"
         addChild(Tableau3)
         
-        Tableau4.position = CGPointMake(750, 400)
+        Tableau4.position = CGPointMake(750, 350)
         Tableau4.name = "T4"
         addChild(Tableau4)
         
         // Deck
         
-        myDeck.position = CGPointMake(100, 575)
+        myDeck.position = CGPointMake(100, 525)
         myDeck.name = "D"
         addChild(myDeck)
         
@@ -332,6 +405,89 @@ class BoardScene: SKScene {
             addChild(thisCard)
         }
 
+    }
+    
+    func DrawPileCounts(view: SKView){
+        F1Label.text = "0"
+        F1Label.fontSize = 30
+        F1Label.fontColor = Constants().whiteColor
+        F1Label.position = CGPointMake(300, 625)
+        F1Label.name = "F1Label"
+        self.addChild(F1Label)
+        
+        F2Label.text = "0"
+        F2Label.fontSize = 30
+        F2Label.fontColor = Constants().whiteColor
+        F2Label.position = CGPointMake(450, 625)
+        F2Label.name = "F2Label"
+        self.addChild(F2Label)
+
+        F3Label.text = "0"
+        F3Label.fontSize = 30
+        F3Label.fontColor = Constants().whiteColor
+        F3Label.position = CGPointMake(600, 625)
+        F3Label.name = "F3Label"
+        self.addChild(F3Label)
+
+        F4Label.text = "0"
+        F4Label.fontSize = 30
+        F4Label.fontColor = Constants().whiteColor
+        F4Label.position = CGPointMake(750, 625)
+        F4Label.name = "F4Label"
+        self.addChild(F4Label)
+
+
+    }
+    
+    func UpdatePileCounts(){
+        if(Foundation1.Cards.count < 13){
+            F1Label.text = Constants().StringValue(Foundation1.NextValue);
+        }
+        else {
+            F1Label.text = "✔"
+        }
+        
+        if(Foundation2.Cards.count < 13){
+            F2Label.text = Constants().StringValue(Foundation2.NextValue);
+        }
+        else {
+            F2Label.text = "✔"
+        }
+        
+        if(Foundation3.Cards.count < 13){
+            F3Label.text = Constants().StringValue(Foundation3.NextValue);
+        }
+        else {
+            F3Label.text = "✔"
+        }
+        
+        if(Foundation4.Cards.count < 13){
+            F4Label.text = Constants().StringValue(Foundation4.NextValue);
+        }
+        else {
+            F4Label.text = "✔"
+        }
+
+    }
+    
+    func CheckForWin(){
+        if(win || (Foundation1.Cards.count == 13 && Foundation2.Cards.count == 13 && Foundation3.Cards.count == 13 && Foundation4.Cards.count == 13)){
+            win = true;
+            
+            // Stop Timer
+            gameTimer.invalidate()
+            
+            // Display Win Label
+            let WinLabel = SKLabelNode(fontNamed:"System")
+            WinLabel.text = "You Win!"
+            WinLabel.fontSize = 65
+            WinLabel.fontColor = Constants().whiteColor
+            WinLabel.position = CGPointMake(525, 175)
+            WinLabel.name = "WinLabel"
+            self.addChild(WinLabel)
+
+        }
+        
     }
     
     func DrawScore(view : SKView){
@@ -355,19 +511,19 @@ class BoardScene: SKScene {
     }
     
     func DrawTimer(view : SKView){
+        
         let TimerLabel = SKLabelNode(fontNamed:"System")
         TimerLabel.text = "Timer:"
         TimerLabel.fontSize = 35
         TimerLabel.fontColor = Constants().whiteColor
-        TimerLabel.position = CGPointMake(875, 425)
+        TimerLabel.position = CGPointMake(875, 550)
         TimerLabel.name = "TimerLabel"
         self.addChild(TimerLabel)
         
-        let Timer = SKLabelNode(fontNamed:"System")
         Timer.text = "00:00:00"
-        Timer.fontSize = 20
+        Timer.fontSize = 25
         Timer.fontColor = Constants().whiteColor
-        Timer.position = CGPointMake(935, 400)
+        Timer.position = CGPointMake(935, 525)
         Timer.name = "Timer"
         self.addChild(Timer)
 
@@ -378,7 +534,7 @@ class BoardScene: SKScene {
         QuitButton.text = "Quit Game"
         QuitButton.fontSize = 35
         QuitButton.fontColor = Constants().whiteColor
-        QuitButton.position = CGPointMake(900, 200)
+        QuitButton.position = CGPointMake(900, 300)
         QuitButton.name = "Quit"
         self.addChild(QuitButton)
     }

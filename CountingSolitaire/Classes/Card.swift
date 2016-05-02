@@ -82,7 +82,7 @@ class Card : SKSpriteNode {
             // 'self' in most cases is not required in Swift
             Dragging = true;
             dragZ = zPosition
-            zPosition = 100
+            zPosition = 999
             let liftUp = SKAction.scaleTo(activeScale, duration: defaultDuration)
             runAction(liftUp)
             

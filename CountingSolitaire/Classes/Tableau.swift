@@ -25,9 +25,9 @@ class Tableau : Pile {
         super.AddCard(card)
         
         let count = self.Cards.count
-        let yOffset : CGFloat = CGFloat(count) * 25.0
+        let yOffset : CGFloat = CGFloat(count-1) * 30.0
         card.position = CGPoint(x: self.position.x, y: self.position.y - yOffset)
-        card.CardPos = self.position
+        card.CardPos = card.position
         card.zPosition = self.zPosition + CGFloat(count)
 
     }
